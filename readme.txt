@@ -1,11 +1,11 @@
-=== WPWH - Contact Form 7 ===
+=== WP Webhooks - Contact Form 7 Integration ===
 Author URI: https://ironikus.com/
 Plugin URI: https://ironikus.com/downloads/contact-form-7-webhook-integration/
 Contributors: ironikus
 Donate link: https://paypal.me/ironikus
 Tags: contact form 7, webhooks, automation, ironikus, contact, email form WordPress, email form
 Requires at least: 4.7
-Tested up to: 5.1
+Tested up to: 5.2.2
 Stable Tag: 1.0.0
 License: GNU Version 3 or Any Later Version
 
