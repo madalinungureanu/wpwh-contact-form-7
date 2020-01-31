@@ -5,7 +5,7 @@ Contributors: ironikus
 Donate link: https://paypal.me/ironikus
 Tags: contact form 7, webhooks, automation, ironikus, contact, email form WordPress, email form
 Requires at least: 4.7
-Tested up to: 5.2.2
+Tested up to: 5.3.2
 Stable Tag: 1.0.0
 License: GNU Version 3 or Any Later Version
 
