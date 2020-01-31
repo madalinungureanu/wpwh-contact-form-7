@@ -183,6 +183,15 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 		public function trigger_send_contact_form(){
 
 			$validated_forms = array();
+
+			$validated_payload = array(
+				'form_id'   => WPWHPRO()->helpers->translate( "Form ID", "trigger-cf7" ),
+				'form_data' => WPWHPRO()->helpers->translate( "Form Post Data", "trigger-cf7" ),
+				'form_data_meta' => WPWHPRO()->helpers->translate( "Form Post Meta", "trigger-cf7" ),
+				'form_submit_data' => WPWHPRO()->helpers->translate( "Form Submit Data", "trigger-cf7" ),
+				'special_mail_tags' => WPWHPRO()->helpers->translate( "Special Mail Tags", "trigger-cf7" ),
+			);
+
 			$contact_forms = get_posts(
 			        array(
 			                'post_type' => 'wpcf7_contact_form',
@@ -251,6 +260,16 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 						'placeholder' => '_post_id,_post_name',
 						'required'    => false,
 						'description' => WPWHPRO()->helpers->translate('Comma-separate special mail tags. E.g.: For [_post_id] and [_post_name], simply add _post_id,_post_name. To use a custom key, simply add ":MYKEY" behind the tag. E.g: _post_id:post_id,_post_name:post_name', 'wpwhpro-fields-cf7-forms-tip')
+					),
+					'wpwhpro_cf7_customize_payload' => array(
+						'id'          => 'wpwhpro_cf7_customize_payload',
+						'type'        => 'select',
+						'multiple'    => true,
+						'choices'      => $validated_payload,
+						'label'       => WPWHPRO()->helpers->translate('Cutomize your Payload', 'wpwhpro-fields-cf7-forms'),
+						'placeholder' => '',
+						'required'    => false,
+						'description' => WPWHPRO()->helpers->translate('Select wich of the fields shoud be send along within the Payload. If nothing is selected, all will be send along.', 'wpwhpro-fields-cf7-forms-tip')
 					),
 				)
 			);
@@ -410,6 +429,18 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 						$mail_tags = $this->validate_special_mail_tags( $webhook['settings']['wpwhpro_cf7_special_mail_tags'] );
 						if( ! empty( $mail_tags ) ){
 							$data_array['special_mail_tags'] = $mail_tags;
+						}
+					}
+					
+					//Manage the response data
+					if( isset( $webhook['settings']['wpwhpro_cf7_customize_payload'] ) && ! empty( $webhook['settings']['wpwhpro_cf7_customize_payload'] ) ){
+						$allowed_payload_fields =  $webhook['settings']['wpwhpro_cf7_customize_payload'];
+						if( is_array( $allowed_payload_fields ) ){
+							foreach( $data_array as $data_array_key => $data_array_val ){
+								if( ! in_array( $data_array_key, $allowed_payload_fields ) ){
+									unset( $data_array[ $data_array_key ] );
+								}
+							}
 						}
 					}
 				}
