@@ -6,7 +6,7 @@ Donate link: https://paypal.me/ironikus
 Tags: contact form 7, webhooks, automation, ironikus, contact, email form WordPress, email form
 Requires at least: 4.7
 Tested up to: 5.3.2
-Stable Tag: 1.0.0
+Stable Tag: 1.1.0
 License: GNU Version 3 or Any Later Version
 
 A WP Webhooks extension to integrate Contact Form 7
@@ -21,8 +21,10 @@ For a full list of the features, please check down below:
 * Submit Contact Form 7 forms to webhooks
 * Send all forms by default to webhooks
 * Deactivate sending the contact form email for one, multiple or all forms
+* Support for special HTML tags [https://contactform7.com/special-mail-tags/](https://contactform7.com/special-mail-tags/)
 * Trigger webhook only for logged in or non logged in users
 * Test Webhooks right out of the box
+* Payload customization - Alows you to minimize the data that is send over to the opposite webhook
 
 = For devs =
 
@@ -38,6 +40,12 @@ Feel free to message us in case you want special features - We love to help!
 
 
 == Changelog ==
+
+= 1.1.0: Januarz 31, 2020 =
+* Feature: Support for Special Mail Tags: https://contactform7.com/special-mail-tags/
+* Feature: Payload Customization - Alows you to minimize the data that is send over to the opposite webhook
+* Feature: Form Data Key Customization - Customize the key of the data that is send over from your form
+* Fix: Strip unsanitized slashes away
 
 = 1.0.0: May 20, 2019 =
 * Birthday of WPWH - Contact Form 7
