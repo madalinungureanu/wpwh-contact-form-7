@@ -79,7 +79,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
                 }
 
 				$pipes = $stag->pipes;
-				$value = ( ! empty( $_POST[ $stag->name ] ) ) ? $_POST[ $stag->name ] : '';
+				$value = ( ! empty( $_POST[ $stag->name ] ) ) ? stripslashes( $_POST[ $stag->name ] ) : '';
 				$payload_key = $stag->name;
 				$form_key = $stag->get_option( 'wpwhkey' );
 
