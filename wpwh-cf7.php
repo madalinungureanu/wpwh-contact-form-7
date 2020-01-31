@@ -80,6 +80,12 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 
 				$pipes = $stag->pipes;
 				$value = ( ! empty( $_POST[ $stag->name ] ) ) ? $_POST[ $stag->name ] : '';
+				$payload_key = $stag->name;
+				$form_key = $stag->get_option( 'wpwhkey' );
+
+				if( ! empty( $form_key ) && is_array( $form_key ) && ! empty( $form_key[0] ) ){
+					$payload_key = $form_key[0];
+				}
 
 				if ( defined( 'WPCF7_USE_PIPE' ) && WPCF7_USE_PIPE && $pipes instanceof WPCF7_Pipes && ! $pipes->zero() ) {
 					if ( is_array( $value) ) {
@@ -95,7 +101,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 					}
 				}
 
-				$data[ $stag->name ] = $value;
+				$data[ $payload_key ] = $value;
 			}
 
 			return $data;
@@ -207,6 +213,11 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
             <p><?php echo WPWHPRO()->helpers->translate( 'You will recieve a full response of the user form data, the form post meta, as well as of the sumitted form data.', 'trigger-cf7' ); ?></p>
             <p><?php echo WPWHPRO()->helpers->translate( 'You can also filter contact forms to specify where exactly you want to run the trigger on.', 'trigger-cf7' ); ?></p>
             <p><?php echo WPWHPRO()->helpers->translate( 'To check the Webhooks response on a demo request, just open your browser console and you will see the object.', 'trigger-cf7' ); ?></p>
+			<br><br>
+            <p><?php echo WPWHPRO()->helpers->translate( 'You can also rename certain webhook keys by defining an additional attribute within the <strong>Contact Form template</strong>. Here is an example:', 'trigger-cf7' ); ?></p>
+			<pre>[text your-email wpwhkey:new_key]
+</pre>
+<p><?php echo WPWHPRO()->helpers->translate( 'The above example changes the key within the payload from "your-email" to "new_key". To define it, simply set the argument "<strong>wpwhkey</strong>" and separate the new key using a double point (:)."', 'trigger-cf7' ); ?></p>
 			<?php
 			$description = ob_get_clean();
 
@@ -306,7 +317,11 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
                     'your-name' => 'xxxxxx',
                     'your-email' => 'xxxxxx',
                     'your-message' => 'xxxxxx'
-                ),
+				),
+				'special_mail_tags' => array(
+					'custom_key' => 123,
+					'another_key' => 'Hello there'
+				)
 			);
 
 			return $data;
