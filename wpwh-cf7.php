@@ -101,6 +101,35 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 			return $data;
 		}
 
+
+		private function validate_special_mail_tags( $cf ) {
+			$return = array();
+
+			if( empty( $cf ) ){
+				return $return;
+			}
+
+			$tags_data = explode( ',', $cf );
+			if( ! empty( $tags_data ) && is_array( $tags_data ) ){
+				foreach( $tags_data as $stag ){
+					$stag_data = explode( ':', $stag );
+
+					if( isset( $stag_data[0] ) ){
+						$special_tag_name = $stag_data[0];
+						$special_tag_key = $stag_data[0];
+
+						if( isset( $stag_data[1] ) ){
+							$special_tag_key = $stag_data[1];
+						}
+
+						$return[ $special_tag_key ] = apply_filters( 'wpcf7_special_mail_tags', '', $special_tag_name, false );
+					}
+				}
+			}
+			
+			return $return;
+		}
+
 		/**
 		 * ######################
 		 * ###
@@ -202,6 +231,15 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 						'placeholder' => '',
 						'required'    => false,
 						'description' => WPWHPRO()->helpers->translate('Check the button if you don\'t want to send the contact form to the specified email as usual.', 'wpwhpro-fields-cf7-forms-tip')
+					),
+					'wpwhpro_cf7_special_mail_tags' => array(
+						'id'          => 'wpwhpro_cf7_special_mail_tags',
+						'type'        => 'text',
+						'default_value' => '',
+						'label'       => WPWHPRO()->helpers->translate('Add special mail tags', 'wpwhpro-fields-cf7-forms'),
+						'placeholder' => '_post_id,_post_name',
+						'required'    => false,
+						'description' => WPWHPRO()->helpers->translate('Comma-separate special mail tags. E.g.: For [_post_id] and [_post_name], simply add _post_id,_post_name. To use a custom key, simply add ":MYKEY" behind the tag. E.g: _post_id:post_id,_post_name:post_name', 'wpwhpro-fields-cf7-forms-tip')
 					),
 				)
 			);
@@ -314,8 +352,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 					    if( isset( $webhook['settings']['wpwhpro_cf7_forms_send_email'] ) && ! empty( $webhook['settings']['wpwhpro_cf7_forms_send_email'] ) ) {
 						    $is_valid = true;
 					    }
-
-                    }
+					}
 				}
 			}
 
@@ -337,19 +374,29 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 				'form_data' => get_post( $form_id ),
 				'form_data_meta' => get_post_meta( $form_id ),
 				'form_submit_data' => $this->get_contact_form_data( $contact_form ),
+				'special_mail_tags' => array(),
 			);
 
 			$webhooks = WPWHPRO()->webhook->get_hooks( 'trigger', 'cf7_forms' );
 			foreach( $webhooks as $webhook ){
 
 				$is_valid = true;
+				$mail_tags = array();
 
 				if( isset( $webhook['settings'] ) ){
 				    if( isset( $webhook['settings']['wpwhpro_cf7_forms'] ) && ! empty( $webhook['settings']['wpwhpro_cf7_forms'] ) ){
 					    if( ! in_array( $form_id, $webhook['settings']['wpwhpro_cf7_forms'] ) ){
 						    $is_valid = false;
 					    }
-                    }
+					}
+					
+					//Add Custom Tags
+					if( isset( $webhook['settings']['wpwhpro_cf7_special_mail_tags'] ) && ! empty( $webhook['settings']['wpwhpro_cf7_special_mail_tags'] ) ){
+						$mail_tags = $this->validate_special_mail_tags( $webhook['settings']['wpwhpro_cf7_special_mail_tags'] );
+						if( ! empty( $mail_tags ) ){
+							$data_array['special_mail_tags'] = $mail_tags;
+						}
+					}
 				}
 
 				if( $is_valid ){
