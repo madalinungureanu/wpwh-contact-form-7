@@ -3,10 +3,10 @@ Author URI: https://ironikus.com/
 Plugin URI: https://ironikus.com/downloads/contact-form-7-webhook-integration/
 Contributors: ironikus
 Donate link: https://paypal.me/ironikus
-Tags: contact form 7, webhooks, automation, ironikus, contact, email form WordPress, email form
+Tags: contact form 7, webhooks, automation, ironikus, contact, email form WordPress, email form, zapier, api, wp webhooks
 Requires at least: 4.7
 Tested up to: 5.3.2
-Stable Tag: 1.1.0
+Stable Tag: 1.1.1
 License: GNU Version 3 or Any Later Version
 
 A WP Webhooks extension to integrate Contact Form 7
@@ -41,7 +41,10 @@ Feel free to message us in case you want special features - We love to help!
 
 == Changelog ==
 
-= 1.1.0: Januarz 31, 2020 =
+= 1.1.1: Febbruary 18, 2020 =
+* Fix: Multiselect fields return null instead of the actual value
+
+= 1.1.0: January 31, 2020 =
 * Feature: Support for Special Mail Tags: https://contactform7.com/special-mail-tags/
 * Feature: Payload Customization - Alows you to minimize the data that is send over to the opposite webhook
 * Feature: Form Data Key Customization - Customize the key of the data that is send over from your form
