@@ -3,7 +3,7 @@
  * Plugin Name: WP Webhooks - Contact Form 7 Integration
  * Plugin URI: https://ironikus.com/downloads/contact-form-7-webhook-integration/
  * Description: A WP Webhooks extension to integrate Contact Form 7
- * Version: 1.1.1
+ * Version: 1.1.2
  * Author: Ironikus
  * Author URI: https://ironikus.com/
  * License: GPL2
@@ -120,6 +120,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 			if( ! empty( $tags_data ) && is_array( $tags_data ) ){
 				foreach( $tags_data as $stag ){
 					$stag_data = explode( ':', $stag );
+					$mail_tag = new WPCF7_MailTag( '[' . $stag . ']', $stag, '' );
 
 					if( isset( $stag_data[0] ) ){
 						$special_tag_name = $stag_data[0];
@@ -129,7 +130,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 							$special_tag_key = $stag_data[1];
 						}
 
-						$return[ $special_tag_key ] = apply_filters( 'wpcf7_special_mail_tags', '', $special_tag_name, false );
+						$return[ $special_tag_key ] = apply_filters( 'wpcf7_special_mail_tags', '', $special_tag_name, false, $mail_tag );
 					}
 				}
 			}
@@ -196,7 +197,8 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 			$contact_forms = get_posts(
 			        array(
 			                'post_type' => 'wpcf7_contact_form',
-                            'post_status' => 'publish'
+							'post_status' => 'publish',
+							'numberposts' => -1
                     )
             );
 			foreach( $contact_forms as $form ){
@@ -217,17 +219,53 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 				'form_submit_data'   => array( 'short_description' => WPWHPRO()->helpers->translate( 'The data which was submitted by the form. For more details, check the return code area.', 'trigger-cf7' ) ),
 			);
 
+			$translation_ident = "trigger-trigger-cf7-description";
+
 			ob_start();
-			?>
-            <p><?php echo WPWHPRO()->helpers->translate( "Please copy your webhook URL into the provided input field. After that you can test your data via the Send demo button.", "trigger-cf7" ); ?></p>
-            <p><?php echo WPWHPRO()->helpers->translate( 'You will recieve a full response of the user form data, the form post meta, as well as of the sumitted form data.', 'trigger-cf7' ); ?></p>
-            <p><?php echo WPWHPRO()->helpers->translate( 'You can also filter contact forms to specify where exactly you want to run the trigger on.', 'trigger-cf7' ); ?></p>
-            <p><?php echo WPWHPRO()->helpers->translate( 'To check the Webhooks response on a demo request, just open your browser console and you will see the object.', 'trigger-cf7' ); ?></p>
-			<br><br>
-            <p><?php echo WPWHPRO()->helpers->translate( 'You can also rename certain webhook keys by defining an additional attribute within the <strong>Contact Form template</strong>. Here is an example:', 'trigger-cf7' ); ?></p>
-			<pre>[text your-email wpwhkey:new_key]
-</pre>
-<p><?php echo WPWHPRO()->helpers->translate( 'The above example changes the key within the payload from "your-email" to "new_key". To define it, simply set the argument "<strong>wpwhkey</strong>" and separate the new key using a double point (:)."', 'trigger-cf7' ); ?></p>
+?>
+
+<?php echo WPWHPRO()->helpers->translate( "This webhook trigger is used to send data, on the submission of a contact form (Via the Contact Form 7 plugin), to one or multiple given webhook URL's.", $translation_ident ); ?>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "This description is uniquely made for the <strong>Send Data On Contact Form 7 Submits</strong> (cf7_forms) webhook trigger.", $translation_ident ); ?>
+<br><br>
+<h4><?php echo WPWHPRO()->helpers->translate( "How to use <strong>Send Data On Contact Form 7 Submits</strong> (cf7_forms)", $translation_ident ); ?></h4>
+<ol>
+    <li><?php echo WPWHPRO()->helpers->translate( "To get started, you need to add your receiving URL endpoint, that accepts webhook requests, from the third-party provider or service you want to use.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "Once you have this URL, please place it into the <strong>Webhook URL</strong> field above.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "For better identification of the webhook URL, we recommend to also fill the <strong>Webhook Name</strong> field. This field will be used as the slug for your webhook URL. In case you leave it empty, we will automatically generate a random number as an identifier.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "After you added your <strong>Webhook URL</strong>, press the <strong>Add</strong> button to finish adding the entry.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "That's it! Now you can receive data on the URL once the trigger fires.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "Next to the <strong>Webhook URL</strong>, you will find a settings item, which you can use to customize the payload/request.", $translation_ident ); ?></li>
+</ol>
+<br><br>
+
+<h4><?php echo WPWHPRO()->helpers->translate( "When does this trigger fire?", $translation_ident ); ?></h4>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "This trigger is registered on the <strong>wpcf7_mail_sent</strong> hook of the Contact Form 7 plugin:", $translation_ident ); ?> 
+<a title="wordpress.org" target="_blank" href="https://de.wordpress.org/plugins/contact-form-7/">https://de.wordpress.org/plugins/contact-form-7/</a>
+<br>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "Here is the call within our code we use to fire this trigger:", $translation_ident ); ?>
+<pre>add_action( 'wpcf7_mail_sent', array( $this, 'wpwh_wpcf7_mail_sent' ), 10, 1 );</pre>
+<br><br><br>
+
+<h4><?php echo WPWHPRO()->helpers->translate( "Tipps", $translation_ident ); ?></h4>
+<ol>
+    <li>
+		<?php echo WPWHPRO()->helpers->translate( "You can also rename the webhook keys within the request by defining an additional attribute within the contact form template. Here is an example:", $translation_ident ); ?>
+		<pre>[text your-email wpwhkey:new_key]</pre>
+		<?php echo WPWHPRO()->helpers->translate( 'The above example changes the key within the payload from "your-email" to "new_key". To define it, simply set the argument "wpwhkey" and separate the new key using a double point (:)."', $translation_ident ); ?>
+	</li>
+    <li><?php echo WPWHPRO()->helpers->translate( "In case you don't need a specified webhook URL at the moment, you can simply deactivate it by clicking the <strong>Deactivate</strong> link next to the <strong>Webhook URL</strong>. This results in the specified URL not being fired once the trigger fires.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "You can use the <strong>Send demo</strong> button to send a static request to your specified <strong>Webhook URL</strong>. Please note that the data sent within the request might differ from your live data.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "Within the <strong>Settings</strong> link next to your <strong>Webhook URL</strong>, you can use customize the functionality of the request. It contains certain default settings like changing the request type the data is sent in, or custom settings, depending on your trigger. An explanation for each setting is right next to it. (Please don't forget to save the settings once you changed them - the button is at the end of the popup.)", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "You can also check the response you get from the demo webhook call. To check it, simply open the console of your browser and you will find an entry there, which gives you all the details about the response.", $translation_ident ); ?></li>
+</ol>
+<br><br>
+
+<?php echo WPWHPRO()->helpers->translate( "In case you would like to learn more about our plugin, please check out our documentation at:", $translation_ident ); ?>
+<br>
+<a title="Go to ironikus.com/docs" target="_blank" href="https://ironikus.com/docs/article-categories/get-started/">https://ironikus.com/docs/article-categories/get-started/</a>
 			<?php
 			$description = ob_get_clean();
 
