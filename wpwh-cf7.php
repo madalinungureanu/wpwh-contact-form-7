@@ -26,6 +26,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 			add_action( 'plugins_loaded', array( $this, 'add_webhook_triggers' ), 20 );
 			add_filter( 'wpwhpro/webhooks/get_webhooks_triggers', array( $this, 'add_webhook_triggers_content' ), 20 );
 			add_action( 'admin_notices', array( $this, 'wpwhpro_cf7_throw_admin_notices' ), 100 );
+			add_action( 'admin_init', array( $this, 'wpwhpro_cf7_clear_preserved_files' ), 100 );
 		}
 
 		public function wpwhpro_cf7_throw_admin_notices(){
@@ -36,6 +37,54 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 
         }
 
+		public function wpwhpro_cf7_create_upload_protection_files( $upload_path ) {
+	
+			// Top level .htaccess file
+			$rules = $this->get_htaccess_rules();
+			if ( $this->htaccess_exists() ) {
+				$contents = @file_get_contents( $upload_path . '/.htaccess' );
+				if ( $contents !== $rules || ! $contents ) {
+					// Update the .htaccess rules if they don't match
+					@file_put_contents( $upload_path . '/.htaccess', $rules );
+				}
+			} elseif( wp_is_writable( $upload_path ) ) {
+				// Create the file if it doesn't exist
+				@file_put_contents( $upload_path . '/.htaccess', $rules );
+			}
+	
+			// Top level blank index.php
+			$this->create_index_php( $upload_path );
+	
+			// Now place index.php files in all sub folders
+			$folders = $this->plpl_scan_folders( $upload_path );
+			foreach ( $folders as $folder ) {
+				// Create index.php, if it doesn't exist
+				$this->create_index_php( $folder );
+			}
+		}
+
+		public function wpwhpro_cf7_clear_preserved_files(){
+			$preserved_files = $this->get_preserved_files();
+			$update = false;
+			$current_stamp = time();
+
+			foreach( $preserved_files as $preserved_files_key => $single_file ){
+				if( $single_file['time_to_delete'] < $current_stamp ){
+
+					if( file_exists( $single_file['file_path'] ) ){
+						wp_delete_file( $single_file['file_path'] );
+						unset( $preserved_files[ $preserved_files_key ] );
+						$update = true;
+					}
+					
+				}
+			}
+
+			if( $$update ){
+				$this->update_preserved_files( $preserved_files );
+			}
+		}
+
 		/**
 		 * ######################
 		 * ###
@@ -43,6 +92,90 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 		 * ###
 		 * ######################
 		 */
+
+		 public function get_preserved_files(){
+			$preserved_files = get_transient( 'wpwhcf7_preserved_files' );
+
+			if( empty( $preserved_files ) ){
+				$preserved_files = array();
+			}
+
+			return apply_filters( 'wpcf7_get_preserved_files', $preserved_files );
+		 }
+
+		 public function update_preserved_files( $preserved_files ){
+			$success = set_transient( 'wpwhcf7_preserved_files', $preserved_files );
+			return $success;
+		 }
+
+		 public function create_index_php( $folder ){
+			if ( ! file_exists( $folder . '/index.php' ) && wp_is_writable( $folder ) ) {
+				@file_put_contents( $folder . '/index.php', '<?php' . PHP_EOL . '// Silence is golden.' );
+			}
+		 }
+
+		public function get_upload_dir( $create = true, $sub_dir = null ) {
+			$wp_upload_dir = wp_upload_dir();
+			$folder_name = apply_filters( 'wpcf7_upload_file_folder_name', 'wpwhcf7' );
+
+			if( $create ){
+				$create_files = false;
+				if( ! is_dir( $wp_upload_dir['basedir'] . '/' . $folder_name ) ){
+					$create_files = true;
+				}
+
+				wp_mkdir_p( $wp_upload_dir['basedir'] . '/' . $folder_name );
+
+				if( $create_files ){
+					$this->wpwhpro_cf7_create_upload_protection_files( $wp_upload_dir['basedir'] . '/' . $folder_name );
+				}
+			}
+			
+			$path = $wp_upload_dir['basedir'] . '/' . $folder_name;
+
+			if( ! empty( $sub_dir ) ){
+				if( $create ){
+					wp_mkdir_p( $path . '/' . $sub_dir );
+					$this->create_index_php( $path . '/' . $sub_dir );
+				}
+				
+				$path = $path . '/' . $sub_dir;
+			}
+		
+			return $path;
+		}
+
+		public function htaccess_exists() {
+			$upload_path = $this->get_upload_dir();
+		
+			return file_exists( $upload_path . '/.htaccess' );
+		}
+
+		public function get_htaccess_rules() {
+
+			$rules = "Options -Indexes\n";
+			$rules .= "deny from all\n";
+			
+			return $rules;
+		}
+
+		function plpl_scan_folders( $path = '', $return = array() ) {
+			$path = $path == ''? dirname( __FILE__ ) : $path;
+			$lists = @scandir( $path );
+		
+			if ( ! empty( $lists ) ) {
+				foreach ( $lists as $f ) {
+					if ( is_dir( $path . DIRECTORY_SEPARATOR . $f ) && $f != "." && $f != ".." ) {
+						if ( ! in_array( $path . DIRECTORY_SEPARATOR . $f, $return ) )
+							$return[] = trailingslashit( $path . DIRECTORY_SEPARATOR . $f );
+		
+						$this->plpl_scan_folders( $path . DIRECTORY_SEPARATOR . $f, $return);
+					}
+				}
+			}
+		
+			return $return;
+		}
 
 		public function is_cf7_active(){
 
@@ -71,6 +204,8 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 		private function get_contact_form_data( $contact_form ) {
 			$data = array();
 			$form_tags = $contact_form->scan_form_tags();
+			$submission = WPCF7_Submission::get_instance();
+			$uploaded_files = $submission->uploaded_files();
 
 			foreach ( $form_tags as $stag ) {
 
@@ -88,17 +223,26 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 					$payload_key = $form_key[0];
 				}
 
-				if ( defined( 'WPCF7_USE_PIPE' ) && WPCF7_USE_PIPE && $pipes instanceof WPCF7_Pipes && ! $pipes->zero() ) {
-					if ( is_array( $value) ) {
-						$new_value = array();
-
-						foreach ( $value as $svalue ) {
-							$new_value[] = $pipes->do_pipe( wp_unslash( $svalue ) );
+				if ( is_array( $uploaded_files ) && ! empty( $uploaded_files[ $stag->name ] ) ) {
+					$file_name = wp_basename( $uploaded_files[ $stag->name ] );
+					$value = array(
+						'file_name' => $file_name,
+						'file_url' => str_replace( ABSPATH, trim( home_url(), '/' ) . '/', $uploaded_files[ $stag->name ] ),
+						'absolute_path' => $uploaded_files[ $stag->name ],
+					);
+				} else {
+					if ( defined( 'WPCF7_USE_PIPE' ) && WPCF7_USE_PIPE && $pipes instanceof WPCF7_Pipes && ! $pipes->zero() ) {
+						if ( is_array( $value) ) {
+							$new_value = array();
+	
+							foreach ( $value as $svalue ) {
+								$new_value[] = $pipes->do_pipe( wp_unslash( $svalue ) );
+							}
+	
+							$value = $new_value;
+						} else {
+							$value = $pipes->do_pipe( wp_unslash( $value ) );
 						}
-
-						$value = $new_value;
-					} else {
-						$value = $pipes->do_pipe( wp_unslash( $value ) );
 					}
 				}
 
@@ -300,6 +444,15 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 						'required'    => false,
 						'description' => WPWHPRO()->helpers->translate('Comma-separate special mail tags. E.g.: For [_post_id] and [_post_name], simply add _post_id,_post_name. To use a custom key, simply add ":MYKEY" behind the tag. E.g: _post_id:post_id,_post_name:post_name', 'wpwhpro-fields-cf7-forms-tip')
 					),
+					'wpwhpro_cf7_preserve_files' => array(
+						'id'          => 'wpwhpro_cf7_preserve_files',
+						'type'        => 'text',
+						'default_value' => '',
+						'label'       => WPWHPRO()->helpers->translate('Preserve uploaded form files', 'wpwhpro-fields-cf7-forms'),
+						'placeholder' => 'none',
+						'required'    => false,
+						'description' => WPWHPRO()->helpers->translate('By default, files are automatically removed once the contact form was sent. Please set a number of the duration on how long the file should be preserved (In seconds). E.g. 180 is equal to three minutes. Type "0" to never delete them or "none" to not save them at all.', 'wpwhpro-fields-cf7-forms-tip')
+					),
 					'wpwhpro_cf7_customize_payload' => array(
 						'id'          => 'wpwhpro_cf7_customize_payload',
 						'type'        => 'select',
@@ -450,11 +603,19 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 				'special_mail_tags' => array(),
 			);
 
+			$sub_directory = 'form-' . intval( $form_id ) . '-';
+			$starting_random = wp_generate_password( 12, false );
+			while( is_dir( $this->get_upload_dir( false, $sub_directory . '/' . $starting_random ) ) ){
+				$starting_random = wp_generate_password( 12, false );
+			}
+			$sub_directory .= $starting_random;
+
 			$webhooks = WPWHPRO()->webhook->get_hooks( 'trigger', 'cf7_forms' );
 			foreach( $webhooks as $webhook ){
 
 				$is_valid = true;
 				$mail_tags = array();
+				$single_data_array = $data_array;
 
 				if( isset( $webhook['settings'] ) ){
 				    if( isset( $webhook['settings']['wpwhpro_cf7_forms'] ) && ! empty( $webhook['settings']['wpwhpro_cf7_forms'] ) ){
@@ -467,7 +628,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 					if( isset( $webhook['settings']['wpwhpro_cf7_special_mail_tags'] ) && ! empty( $webhook['settings']['wpwhpro_cf7_special_mail_tags'] ) ){
 						$mail_tags = $this->validate_special_mail_tags( $webhook['settings']['wpwhpro_cf7_special_mail_tags'] );
 						if( ! empty( $mail_tags ) ){
-							$data_array['special_mail_tags'] = $mail_tags;
+							$single_data_array['special_mail_tags'] = $mail_tags;
 						}
 					}
 					
@@ -475,9 +636,61 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 					if( isset( $webhook['settings']['wpwhpro_cf7_customize_payload'] ) && ! empty( $webhook['settings']['wpwhpro_cf7_customize_payload'] ) ){
 						$allowed_payload_fields =  $webhook['settings']['wpwhpro_cf7_customize_payload'];
 						if( is_array( $allowed_payload_fields ) ){
-							foreach( $data_array as $data_array_key => $data_array_val ){
-								if( ! in_array( $data_array_key, $allowed_payload_fields ) ){
-									unset( $data_array[ $data_array_key ] );
+							foreach( $single_data_array as $single_data_array_key => $single_data_array_val ){
+								if( ! in_array( $single_data_array_key, $allowed_payload_fields ) ){
+									unset( $single_data_array[ $single_data_array_key ] );
+								}
+							}
+						}
+					}
+
+					//Manage the response data
+					if( isset( $webhook['settings']['wpwhpro_cf7_preserve_files'] ) ){
+						$preserve_files_duration =  $webhook['settings']['wpwhpro_cf7_preserve_files'];
+
+						if( is_numeric( $preserve_files_duration ) && $preserve_files_duration !== 'none' ){
+							$preserve_files_duration = intval( $preserve_files_duration );
+
+							if( is_array( $single_data_array['form_submit_data'] ) ){
+								foreach( $single_data_array['form_submit_data'] as $single_form_data_key => $single_form_data ){
+									if( is_array( $single_form_data ) && isset( $single_form_data['file_name'] ) ){
+										$path = $this->get_upload_dir( true, $sub_directory );
+										if( ! file_exists( $path . '/' . $single_form_data['file_name'] ) ){
+											copy( $single_form_data['absolute_path'], $path . '/' . $single_form_data['file_name'] );
+											$single_data_array['form_submit_data'][ $single_form_data_key ] = array(
+												'file_name' => wp_basename( $path . '/' . $single_form_data['file_name'] ),
+												'file_url' => str_replace( ABSPATH, trim( home_url(), '/' ) . '/', $path . '/' . $single_form_data['file_name'] ),
+												'absolute_path' => $path . '/' . $single_form_data['file_name'],
+											);
+
+											if( $preserve_files_duration !== 0 ){
+												$preserved_files = $this->get_preserved_files();
+												$preserved_files[] = array(
+													'time_created' => time(),
+													'time_to_delete' => ( time() + $preserve_files_duration ),
+													'file_path' => $path . '/' . $single_form_data['file_name'],
+												);
+												$this->update_preserved_files( $preserved_files );
+											}
+											
+										}
+									}
+								}
+							}
+						} else {
+							if( is_array( $single_data_array['form_submit_data'] ) ){
+								foreach( $single_data_array['form_submit_data'] as $single_form_data_key => $single_form_data ){
+									if( is_array( $single_form_data ) && isset( $single_form_data['file_name'] ) ){
+										$single_data_array['form_submit_data'][ $single_form_data_key ] = '';
+									}
+								}
+							}
+						}
+					} else { //make sure if nothing was set, we remove it to not show temporary data
+						if( is_array( $single_data_array['form_submit_data'] ) ){
+							foreach( $single_data_array['form_submit_data'] as $single_form_data_key => $single_form_data ){
+								if( is_array( $single_form_data ) && isset( $single_form_data['file_name'] ) ){
+									$single_data_array['form_submit_data'][ $single_form_data_key ] = '';
 								}
 							}
 						}
@@ -485,7 +698,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 				}
 
 				if( $is_valid ){
-					$response_data[] = WPWHPRO()->webhook->post_to_webhook( $webhook, $data_array );
+					$response_data[] = WPWHPRO()->webhook->post_to_webhook( $webhook, $single_data_array );
 				}
 			}
 
