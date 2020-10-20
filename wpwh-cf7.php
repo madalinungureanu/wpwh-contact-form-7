@@ -395,6 +395,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 
 <h4><?php echo WPWHPRO()->helpers->translate( "Tipps", $translation_ident ); ?></h4>
 <ol>
+	<li><?php echo WPWHPRO()->helpers->translate( "You can also make the temporary files from Contact Form 7 available for webhook calls. To do that, simply check out the settings of your added webhook endpoint. There you will find a feature called <strong>Preserve uploaded form files</strong>. It allows you to temporarily or permanently cache given files to make them available even after CF7 has deleted them from their structure.", $translation_ident ); ?></li>
     <li>
 		<?php echo WPWHPRO()->helpers->translate( "You can also rename the webhook keys within the request by defining an additional attribute within the contact form template. Here is an example:", $translation_ident ); ?>
 		<pre>[text your-email wpwhkey:new_key]</pre>
