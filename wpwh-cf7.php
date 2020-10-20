@@ -3,7 +3,7 @@
  * Plugin Name: WP Webhooks - Contact Form 7 Integration
  * Plugin URI: https://ironikus.com/downloads/contact-form-7-webhook-integration/
  * Description: A WP Webhooks extension to integrate Contact Form 7
- * Version: 1.1.2
+ * Version: 1.2
  * Author: Ironikus
  * Author URI: https://ironikus.com/
  * License: GPL2

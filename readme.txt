@@ -3,10 +3,10 @@ Author URI: https://ironikus.com/
 Plugin URI: https://ironikus.com/downloads/contact-form-7-webhook-integration/
 Contributors: ironikus
 Donate link: https://paypal.me/ironikus
-Tags: contact form 7, webhooks, automation, ironikus, contact, email form WordPress, email form, zapier, api, wp webhooks
+Tags: contact form 7, webhooks, automation, ironikus, contact, email form WordPress, email form, zapier, api, wp webhooks, contact form 7 webhook, automation
 Requires at least: 4.7
-Tested up to: 5.5
-Stable Tag: 1.1.2
+Tested up to: 5.5.1
+Stable Tag: 1.2
 License: GNU Version 3 or Any Later Version
 
 A WP Webhooks extension to integrate Contact Form 7
@@ -22,6 +22,7 @@ For a full list of the features, please check down below:
 * Send all forms by default to webhooks
 * Deactivate sending the contact form email for one, multiple or all forms
 * Support for special HTML tags [https://contactform7.com/special-mail-tags/](https://contactform7.com/special-mail-tags/)
+* Support for file attachments (You can preserve files temporary, forever, or not at all)
 * Trigger webhook only for logged in or non logged in users
 * Test Webhooks right out of the box
 * Payload customization - Alows you to minimize the data that is send over to the opposite webhook
@@ -40,6 +41,11 @@ Feel free to message us in case you want special features - We love to help!
 
 
 == Changelog ==
+
+= 1.2: October 20, 2020 =
+* Feature: Allow preservation of form files (Enables you to caches files for the length of your choice to make them available for webhooks
+* Tweak: Optimize documentation
+* Fix: Applied settings for the contact form have been applied to all added webhook endpoints
 
 = 1.1.2: August 24, 2020 =
 * Tweak: Support for Contact Form 7 5.2.1 (wpcf7_special_mail_tags receives the mail_tag argument)
