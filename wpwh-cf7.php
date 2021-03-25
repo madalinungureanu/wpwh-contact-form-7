@@ -80,7 +80,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 				}
 			}
 
-			if( $$update ){
+			if( $update ){
 				$this->update_preserved_files( $preserved_files );
 			}
 		}
