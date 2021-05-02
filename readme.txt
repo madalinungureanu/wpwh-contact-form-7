@@ -5,8 +5,8 @@ Contributors: ironikus
 Donate link: https://paypal.me/ironikus
 Tags: contact form 7, webhooks, automation, ironikus, contact, email form WordPress, email form, zapier, api, wp webhooks, contact form 7 webhook, automation
 Requires at least: 4.7
-Tested up to: 5.5.1
-Stable Tag: 1.2
+Tested up to: 5.7
+Stable Tag: 1.2.1
 License: GNU Version 3 or Any Later Version
 
 A WP Webhooks extension to integrate Contact Form 7
@@ -41,6 +41,11 @@ Feel free to message us in case you want special features - We love to help!
 
 
 == Changelog ==
+
+= 1.2.1: May 02, 2021 =
+* Feature: Full compatibility with WP Webhooks 3.1.0+ & WP Webhooks Pro 4.1.0+
+* Feature: Make response data accessible via the key based on the given webhook URL name
+* Tweak: Otpimize performance for empty trigger enqueuement
 
 = 1.2: October 20, 2020 =
 * Feature: Allow preservation of form files (Enables you to caches files for the length of your choice to make them available for webhooks

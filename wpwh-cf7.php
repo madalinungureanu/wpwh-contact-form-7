@@ -3,7 +3,7 @@
  * Plugin Name: WP Webhooks - Contact Form 7 Integration
  * Plugin URI: https://ironikus.com/downloads/contact-form-7-webhook-integration/
  * Description: A WP Webhooks extension to integrate Contact Form 7
- * Version: 1.2
+ * Version: 1.2.1
  * Author: Ironikus
  * Author URI: https://ironikus.com/
  * License: GPL2
@@ -310,10 +310,7 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 		 */
 		public function add_webhook_triggers(){
 
-			$active_webhooks = WPWHPRO()->settings->get_active_webhooks();
-			$available_triggers = $active_webhooks['triggers'];
-
-			if( isset( $available_triggers['cf7_forms'] ) ){
+			if( ! empty( WPWHPRO()->webhook->get_hooks( 'trigger', 'cf7_forms' ) ) ){
 				add_action( 'wpcf7_mail_sent', array( $this, 'wpwh_wpcf7_mail_sent' ), 10, 1 );
 				add_filter( 'ironikus_demo_test_cf7_forms', array( $this, 'ironikus_send_demo_cf7_form' ), 10, 3 );
 				add_filter( 'wpcf7_skip_mail', array( $this, 'wpwh_wpcf7_skip_mail' ), 10, 2 );
@@ -614,6 +611,8 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 			$webhooks = WPWHPRO()->webhook->get_hooks( 'trigger', 'cf7_forms' );
 			foreach( $webhooks as $webhook ){
 
+				$webhook_url_name = ( is_array($webhook) && isset( $webhook['webhook_url_name'] ) ) ? $webhook['webhook_url_name'] : null;
+
 				$is_valid = true;
 				$mail_tags = array();
 				$single_data_array = $data_array;
@@ -699,7 +698,12 @@ if( !class_exists( 'WP_Webhooks_Contact_Form_7' ) ){
 				}
 
 				if( $is_valid ){
-					$response_data[] = WPWHPRO()->webhook->post_to_webhook( $webhook, $single_data_array );
+					if( $webhook_url_name !== null ){
+						$response_data[ $webhook_url_name ] = WPWHPRO()->webhook->post_to_webhook( $webhook, $single_data_array );
+					} else {
+						$response_data[] = WPWHPRO()->webhook->post_to_webhook( $webhook, $single_data_array );
+					}
+					
 				}
 			}
 
